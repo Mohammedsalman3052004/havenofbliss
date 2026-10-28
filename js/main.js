@@ -11,8 +11,9 @@
     // Leave empty to fall back to opening the visitor's email app addressed to salesEmail.
     formEndpoint: '',
     salesEmail: 'sales@vbhc.com',
-    // Direct brochure link. When set, it opens after the brochure form is submitted.
-    brochureUrl: '',
+    // Brochure PDF. Put the file at this path (or paste a full URL); it downloads after the brochure form is submitted.
+    brochureUrl: 'assets/haven-of-bliss-brochure.pdf',
+    brochureName: 'Haven-of-Bliss-Brochure.pdf',
     propertyPrice: 5000000 // ₹50 lakh, used by the EMI calculator
   };
 
@@ -240,7 +241,7 @@
     openDialog(lightbox, img);
   }));
 
-  // Validation + submit
+  // Validation + submit (works for the popup and the contact section)
   const rules = {
     name: v => v.trim().length >= 2 || 'Please enter your name',
     email: v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) || 'Please enter a valid email address',
@@ -254,36 +255,52 @@
     $('.err', wrap).textContent = res === true ? '' : res;
     return res === true;
   };
-  $$('.fld input', form).forEach(i => {
-    i.addEventListener('blur', () => validateField(i));
-    i.addEventListener('input', () => { if (i.closest('.fld').classList.contains('has-err')) validateField(i); });
-  });
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    const inputs = $$('.fld input', form).filter(i => rules[i.name]);
-    const valid = inputs.map(validateField).every(Boolean);
-    if (!valid) { const bad = inputs.find(i => i.closest('.fld').classList.contains('has-err')); if (bad) bad.focus(); return; }
-    const data = Object.fromEntries(new FormData(form).entries());
-    const brochure = data.formtype === 'DownloadBrochure';
-    const btn = $('#enqSubmit'); btn.disabled = true;
-    let msg = 'We have received your details and our team will be in touch shortly.';
-    try {
-      if (CONFIG.formEndpoint) {
-        const r = await fetch(CONFIG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-        if (!r.ok) throw new Error('Request failed');
-      } else {
-        const body = ['Name: ' + data.name, 'Email: ' + data.email, 'Mobile: ' + data.mobile, 'Interested in: ' + (data.property_type || '1 BHK'), '', data.message || ''].join('\n');
-        window.location.href = 'mailto:' + CONFIG.salesEmail + '?subject=' + encodeURIComponent((brochure ? 'Brochure request' : 'Enquiry') + ' — Haven of Bliss') + '&body=' + encodeURIComponent(body);
-        msg = 'Your email app has opened with your details. Press send there and our team will get back to you shortly.';
-      }
-      if (brochure && CONFIG.brochureUrl) window.open(CONFIG.brochureUrl, '_blank', 'noopener');
-      $('#enqOkMsg').textContent = msg;
-      form.hidden = true; ok.hidden = false;
-      form.reset();
-      if (canAnimate) gsap.fromTo(ok.children, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: .7, stagger: .08, ease: 'power3.out' });
-    } catch (err) {
-      $('.err', $$('.fld', form)[2]).textContent = 'Something went wrong. Please try again or call +91 7353 720 720.';
-    } finally { btn.disabled = false; }
+  const downloadBrochure = () => {
+    if (!CONFIG.brochureUrl) return;
+    const a = document.createElement('a');
+    a.href = CONFIG.brochureUrl; a.download = CONFIG.brochureName || '';
+    a.rel = 'noopener'; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+
+  $$('.js-form').forEach(f => {
+    const okBox = f.parentElement.querySelector('.js-ok');
+    const okMsg = $('.js-ok-msg', okBox) || $('#enqOkMsg');
+    const submit = $('.js-submit', f);
+    $$('.fld input', f).forEach(i => {
+      i.addEventListener('blur', () => validateField(i));
+      i.addEventListener('input', () => { if (i.closest('.fld').classList.contains('has-err')) validateField(i); });
+    });
+    f.addEventListener('submit', async e => {
+      e.preventDefault();
+      const inputs = $$('.fld input', f).filter(i => rules[i.name]);
+      const valid = inputs.map(validateField).every(Boolean);
+      if (!valid) { const bad = inputs.find(i => i.closest('.fld').classList.contains('has-err')); if (bad) bad.focus(); return; }
+      const data = Object.fromEntries(new FormData(f).entries());
+      const brochure = data.formtype === 'DownloadBrochure';
+      submit.disabled = true;
+      let msg = brochure ? 'Thank you! Your brochure is downloading. Our team will also be in touch shortly.' : 'We have received your details and our team will be in touch shortly.';
+      try {
+        if (CONFIG.formEndpoint) {
+          const r = await fetch(CONFIG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+          if (!r.ok) throw new Error('Request failed');
+        }
+        // Brochure downloads only after the form has been submitted successfully
+        if (brochure) downloadBrochure();
+        if (!CONFIG.formEndpoint) {
+          const body = ['Name: ' + data.name, 'Email: ' + data.email, 'Mobile: ' + data.mobile, 'Interested in: ' + (data.property_type || '1 BHK'), '', data.message || ''].join('\n');
+          setTimeout(() => { window.location.href = 'mailto:' + CONFIG.salesEmail + '?subject=' + encodeURIComponent((brochure ? 'Brochure request' : 'Enquiry') + ' — Haven of Bliss') + '&body=' + encodeURIComponent(body); }, brochure ? 400 : 0);
+          if (!brochure) msg = 'Your email app has opened with your details. Press send there and our team will get back to you shortly.';
+        }
+        okMsg.textContent = msg;
+        f.hidden = true; okBox.hidden = false;
+        f.reset();
+        if (canAnimate) gsap.fromTo(okBox.children, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: .7, stagger: .08, ease: 'power3.out' });
+        if (f.id === 'contactForm') setTimeout(() => { f.hidden = false; okBox.hidden = true; }, 9000);
+      } catch (err) {
+        $('.err', $$('.fld', f)[$$('.fld', f).length - 2] || f).textContent = 'Something went wrong. Please try again or call +91 7353 720 720.';
+      } finally { submit.disabled = false; }
+    });
   });
 
   /* ---------- EMI calculator ---------- */
@@ -394,15 +411,6 @@
     if (towerBg) gsap.fromTo(towerBg, { yPercent: -9, scale: 1.08 }, { yPercent: 9, scale: 1, ease: 'none', scrollTrigger: { trigger: '.tower', start: 'top bottom', end: 'bottom top', scrub: true } });
     gsap.to('.hero__media', { yPercent: 14, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
     gsap.to('.hero__inner', { yPercent: -10, opacity: .15, ease: 'none', scrollTrigger: { trigger: '.hero', start: '30% top', end: 'bottom top', scrub: true } });
-
-    // Marquee speeds up with scroll velocity
-    const track = $('.marquee__track');
-    if (track && window.Lenis && lenis) {
-      lenis.on('scroll', ({ velocity }) => {
-        const s = 1 + Math.min(Math.abs(velocity) * .12, 5);
-        track.style.animationDuration = (42 / s) + 's';
-      });
-    }
 
     // Counters
     $$('[data-count]').forEach(el => {
