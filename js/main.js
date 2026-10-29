@@ -14,7 +14,7 @@
     // Brochure PDF. Put the file at this path (or paste a full URL); it downloads after the brochure form is submitted.
     brochureUrl: "assets/haven-of-bliss-brochure.pdf",
     brochureName: "Haven-of-Bliss-Brochure.pdf",
-    propertyPrice: 5000000, // ₹50 lakh, used by the EMI calculator
+    propertyPrice: 5500000, // ₹50 lakh, used by the EMI calculator
   };
 
   const $ = (s, c = document) => c.querySelector(s);

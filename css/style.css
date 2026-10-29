@@ -1487,6 +1487,7 @@ html:not(.js) .loader {
 .price {
   background: var(--ink);
   color: var(--cream);
+  display: none;
 }
 .price__grid {
   display: grid;
@@ -3049,4 +3050,16 @@ input[type="range"]:active::-webkit-slider-thumb {
   .loader {
     display: none;
   }
+}
+.nav-logo{
+  height: 50px;
+  width: 100px;
+}
+.footer-logo{
+  height: 50px;
+  width: 100px;
+}
+.loading-logo{
+  width: 150px;
+  height: 80px;
 }
