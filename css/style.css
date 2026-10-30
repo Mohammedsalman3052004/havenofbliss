@@ -3063,3 +3063,42 @@ input[type="range"]:active::-webkit-slider-thumb {
   width: 150px;
   height: 80px;
 }
+.vbhc-logo{
+  width: 60px;
+  height: 50px;
+}
+.footer-logo-wrapper{
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+
+/* MOBILE ONLY — keep both logos together on the left */
+@media (max-width: 980px) {
+  .nav__inner > a:first-of-type {
+    order: 1;
+    margin-right: 0;
+  }
+
+  .nav__inner > a:last-of-type {
+    order: 2;
+    margin-left: -12px;
+    margin-right: auto;
+  }
+
+  .nav__links {
+    display: none;
+  }
+
+  .nav__actions {
+    order: 3;
+    margin-left: auto;
+  }
+
+  .burger {
+    display: block;
+  }
+}
